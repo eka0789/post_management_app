@@ -4,13 +4,18 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import ConfirmModal from "@/components/ConfirmModal";
 
 export default function Dashboard() {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
 
-  // 🔹 Load posts on mount
+  // modal states
+  const [showModal, setShowModal] = useState(false);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   useEffect(() => {
     const token = getToken();
     if (!token) {
@@ -24,25 +29,28 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  // 🔹 Delete post handler
-  async function handleDelete(id: number) {
-    const confirmDelete = window.confirm("Yakin ingin menghapus post ini?");
-    if (!confirmDelete) return;
+  function openDeleteModal(id: number) {
+    setSelectedId(id);
+    setShowModal(true);
+  }
 
+  async function confirmDelete() {
+    if (!selectedId) return;
     const token = getToken();
-    if (!token) {
-      alert("Unauthorized. Silakan login ulang.");
-      return;
-    }
+    if (!token) return alert("Unauthorized");
+
+    setDeleting(true);
 
     try {
-      await apiFetch(`/posts/${id}`, { method: "DELETE" }, token);
-      setPosts((prev) => prev.filter((p) => p.id !== id));
+      await apiFetch(`/posts/${selectedId}`, { method: "DELETE" }, token);
+      setPosts((prev) => prev.filter((p) => p.id !== selectedId));
       setMessage("✅ Post berhasil dihapus.");
-      setTimeout(() => setMessage(null), 3000);
-    } catch (err: any) {
-      console.error("Error deleting post:", err);
+    } catch (err) {
+      console.error(err);
       setMessage("❌ Gagal menghapus post.");
+    } finally {
+      setDeleting(false);
+      setShowModal(false);
       setTimeout(() => setMessage(null), 3000);
     }
   }
@@ -120,7 +128,7 @@ export default function Dashboard() {
                       Edit
                     </Link>
                     <button
-                      onClick={() => handleDelete(p.id)}
+                      onClick={() => openDeleteModal(p.id)}
                       className="px-3 py-1 text-sm rounded-md bg-red-500 hover:bg-red-600 text-white transition"
                     >
                       Delete
@@ -132,6 +140,17 @@ export default function Dashboard() {
           </table>
         </div>
       )}
+
+      {/* 🔹 Modal konfirmasi hapus */}
+      <ConfirmModal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        onConfirm={confirmDelete}
+        loading={deleting}
+        title="Hapus Post"
+        message="Apakah Anda yakin ingin menghapus post ini? Tindakan ini tidak bisa dibatalkan."
+        confirmText="Hapus"
+      />
     </div>
   );
 }
