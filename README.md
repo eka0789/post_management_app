@@ -1,4 +1,4 @@
-# Assessment — Software Engineer (PT Informatika Media Pratama)
+# Post Management App
 
 ## Overview
 Two-stack implementation:
