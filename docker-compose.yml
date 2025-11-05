@@ -1,0 +1,67 @@
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: post_app_db
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: laravel
+    volumes:
+      - ./docker/mysql/data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    networks:
+      - app_network
+
+  laravel:
+    build:
+      context: ./laravel
+      dockerfile: Dockerfile
+    container_name: laravel_app
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    environment:
+      APP_ENV: production
+      APP_KEY: base64:SomeAppKeyWillBeGeneratedLater=
+      APP_DEBUG: "false"
+      APP_URL: http://localhost:8000
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: pma_db
+      DB_USERNAME: root
+      DB_PASSWORD: 
+    volumes:
+      - ./laravel:/var/www
+    ports:
+      - "8000:8000"
+    networks:
+      - app_network
+    command: >
+      sh -c "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"
+
+  nextjs:
+    build:
+      context: ./nextjs
+      dockerfile: Dockerfile
+    container_name: nextjs_app
+    restart: unless-stopped
+    depends_on:
+      - laravel
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://laravel:8000/api/v1
+    ports:
+      - "3000:3000"
+    networks:
+      - app_network
+    command: "npm run start"
+
+networks:
+  app_network:
+    driver: bridge
