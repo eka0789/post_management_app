@@ -26,7 +26,7 @@ export default function EditPostPage() {
 
     async function fetchPost() {
       try {
-        const res = await apiFetch(`/posts/${id}`, {}, token);
+        const res = await apiFetch(`/posts/${id}`, {}, token ?? undefined);
         setForm({
           title: res.title || "",
           body: res.body || "",

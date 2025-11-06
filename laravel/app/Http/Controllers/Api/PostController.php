@@ -11,16 +11,44 @@ use Illuminate\Http\Request;
 
 class PostController extends Controller
 {
-    public function index(Request $request)
-    {
-        $query = Post::with('author')
-            ->when($request->q, fn($q) => $q->where('title', 'like', "%{$request->q}%"))
-            ->orderByDesc('created_at');
+    // app/Http/Controllers/Api/PostController.php
+public function index(Request $request)
+{
+    $query = Post::with('author');
 
-        $posts = $query->paginate($request->get('per_page', 10));
-
-        return response()->json($posts);
+    // 🔹 Search
+    if ($search = $request->get('search')) {
+        $query->where('title', 'like', "%{$search}%");
     }
+
+    // 🔹 Filter by status
+    if ($status = $request->get('status')) {
+        $query->where('status', $status);
+    }
+
+    // 🔹 Filter by author
+    if ($authorId = $request->get('author_id')) {
+        $query->where('author_id', $authorId);
+    }
+
+    // 🔹 Sorting
+    switch ($request->get('sort')) {
+        case 'oldest':
+            $query->orderBy('created_at', 'asc');
+            break;
+        case 'title_asc':
+            $query->orderBy('title', 'asc');
+            break;
+        case 'title_desc':
+            $query->orderBy('title', 'desc');
+            break;
+        default:
+            $query->orderBy('created_at', 'desc');
+    }
+
+    return $query->paginate($request->get('per_page', 10));
+}
+
 
     public function show($id)
     {

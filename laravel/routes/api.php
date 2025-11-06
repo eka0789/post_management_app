@@ -39,4 +39,7 @@ Route::prefix('v1')->group(function () {
         Route::put('posts/{id}', [PostController::class, 'update']);
         Route::delete('posts/{id}', [PostController::class, 'destroy']);
     });
+    Route::get('/authors', function() {
+    return \App\Models\User::select('id', 'name')->get();
+});
 });
